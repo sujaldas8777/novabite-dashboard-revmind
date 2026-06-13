@@ -43,3 +43,55 @@ def get_summary():
     
     # Send the result back to the user as a JSON Dictionary
     return dict(row)
+
+
+# --- SECOND ENDPOINT ---
+@app.get("/api/products")
+def get_products():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Notice the GROUP BY clause at the end!
+    query = """
+        SELECT 
+            product_name,
+            SUM(net_revenue_usd) AS total_net_revenue,
+            SUM(units_sold) AS total_units
+        FROM sales
+        GROUP BY product_name
+    """
+    
+    cursor.execute(query)
+    
+    # fetchall() because we expect many rows (one for each product)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Convert the list of SQLite Rows into a list of Python Dictionaries
+    products_list = [dict(row) for row in rows]
+    
+    return products_list
+
+
+# --- THIRD ENDPOINT ---
+@app.get("/api/trends")
+def get_trends():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # GROUP BY month to get data for our line chart
+    # ORDER BY month ASC ensures the timeline goes from oldest to newest
+    query = """
+        SELECT 
+            month,
+            SUM(net_revenue_usd) AS total_net_revenue
+        FROM sales
+        GROUP BY month
+        ORDER BY month ASC
+    """
+    
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]
